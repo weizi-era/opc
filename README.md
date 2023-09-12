@@ -6,7 +6,7 @@
 
 Read and write process and automation data in Go from an OPC server for monitoring and data analysis purposes (OPC DA protocol).
 
-```go get github.com/konimarti/opc```
+```go get github.com/weizi-era/opc```
 
 ## Usage
 ```go
