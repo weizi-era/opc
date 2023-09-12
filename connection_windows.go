@@ -1,3 +1,4 @@
+//go:build windows
 // +build windows
 
 package opc
@@ -5,6 +6,7 @@ package opc
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"sync"
 	"time"
 
@@ -221,8 +223,11 @@ func NewAutomationObject() *AutomationObject {
 	// TODO: list should not be hard-coded
 	wrappers := []string{
 		"OPC.Automation.1",
+		"OPC.SiemensDAAuto.1",
 		"Graybox.OPC.DAWrapper.1",
 		"Matrikon.OPC.Automation.1",
+		"HSCOPC.Automation",
+		"RSI.OPCAutomation",
 	}
 	var err error
 	var unknown *ole.IUnknown
@@ -306,9 +311,56 @@ func ensureInt16(q interface{}) int16 {
 	return 0
 }
 
+func ensureFloat64(v interface{}) float64 {
+	if f32, ok := v.(float32); ok {
+		return float64(f32)
+	}
+
+	if f64, ok := v.(float64); ok {
+		return f64
+	}
+
+	return 0.0
+}
+
 //readFromOPC reads from the server and returns an Item and error.
 func (ai *AutomationItems) readFromOpc(opcitem *ole.IDispatch) (Item, error) {
 	v := ole.NewVariant(ole.VT_R4, 0)
+	q := ole.NewVariant(ole.VT_INT, 0)
+	ts := ole.NewVariant(ole.VT_DATE, 0)
+
+	//read tag from opc server and monitor duration in seconds
+	t := time.Now()
+	_, err := oleutil.CallMethod(opcitem, "Read", OPCCache, &v, &q, &ts)
+
+	// Quick and Dirty: if quality OK and value 0.0 then try again from the cache
+	if err == nil && ensureInt16(q.Value()) == 192 && ensureFloat64(v.Value()) == 0.0 {
+		_, err = oleutil.CallMethod(opcitem, "Read", OPCCache, &v, &q, &ts)
+	}
+
+	opcReadsDuration.Observe(time.Since(t).Seconds())
+
+	if err != nil {
+		opcReadsCounter.WithLabelValues("failed").Inc()
+		return Item{
+			Value:     0.0,            // return zero value, when flatlining ... check quality
+			Quality:   ensureInt16(0), // Bad (generic)
+			Timestamp: t,
+			ValueType: "",
+		}, nil
+	}
+	opcReadsCounter.WithLabelValues("success").Inc()
+
+	return Item{
+		Value:     v.Value(),
+		Quality:   ensureInt16(q.Value()), // FIX: ensure the quality value is int16
+		Timestamp: ts.Value().(time.Time),
+		ValueType: reflect.TypeOf(v.Value()).String(),
+	}, nil
+}
+
+func (ai *AutomationItems) readVariantFromOpc(opcitem *ole.IDispatch, vt ole.VT) (Item, error) {
+	v := ole.NewVariant(vt, 0)
 	q := ole.NewVariant(ole.VT_INT, 0)
 	ts := ole.NewVariant(ole.VT_DATE, 0)
 
@@ -323,10 +375,20 @@ func (ai *AutomationItems) readFromOpc(opcitem *ole.IDispatch) (Item, error) {
 	}
 	opcReadsCounter.WithLabelValues("success").Inc()
 
+	var value interface{}
+	if vt&ole.VT_ARRAY != 0 {
+		v.VT = vt
+		value = v.ToArray().ToValueArray()
+	} else {
+		logger.Println("RETURN VALUE", v.VT)
+		value = v.Value()
+	}
+
 	return Item{
-		Value:     v.Value(),
+		Value:     value,
 		Quality:   ensureInt16(q.Value()), // FIX: ensure the quality value is int16
 		Timestamp: ts.Value().(time.Time),
+		ValueType: reflect.TypeOf(v.Value()).String(),
 	}, nil
 }
 
@@ -377,6 +439,23 @@ func (conn *opcConnectionImpl) ReadItem(tag string) Item {
 	opcitem, ok := conn.AutomationItems.items[tag]
 	if ok {
 		item, err := conn.AutomationItems.readFromOpc(opcitem)
+		if err == nil {
+			return item
+		}
+		logger.Printf("Cannot read %s: %s. Trying to fix.", tag, err)
+		conn.fix()
+	} else {
+		logger.Printf("Tag %s not found. Add it first before reading it.", tag)
+	}
+	return Item{}
+}
+
+func (conn *opcConnectionImpl) ReadVariant(tag string, vt ole.VT) Item {
+	conn.mu.Lock()
+	defer conn.mu.Unlock()
+	opcitem, ok := conn.AutomationItems.items[tag]
+	if ok {
+		item, err := conn.AutomationItems.readVariantFromOpc(opcitem, vt)
 		if err == nil {
 			return item
 		}

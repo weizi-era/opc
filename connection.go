@@ -1,6 +1,7 @@
 package opc
 
 import (
+	"github.com/go-ole/go-ole"
 	"time"
 )
 
@@ -44,6 +45,7 @@ type Connection interface {
 	Remove(string)
 	Read() map[string]Item
 	ReadItem(string) Item
+	ReadVariant(string, ole.VT) Item
 	Tags() []string
 	Write(string, interface{}) error
 	Close()
@@ -54,6 +56,7 @@ type Item struct {
 	Value     interface{}
 	Quality   int16
 	Timestamp time.Time
+	ValueType string
 }
 
 //Good checks the quality of the Item
