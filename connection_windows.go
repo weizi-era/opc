@@ -450,7 +450,7 @@ func (conn *opcConnectionImpl) ReadItem(tag string) Item {
 	return Item{
 		Value:     0.0,
 		Quality:   0,
-		Timestamp: time.Time{},
+		Timestamp: time.Now(),
 		ValueType: "unknown",
 	}
 }
