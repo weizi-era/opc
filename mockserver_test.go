@@ -4,6 +4,7 @@ import (
 	// "log"
 	// "fmt"
 	"math/rand"
+	"reflect"
 	"sync"
 	"time"
 )
@@ -35,7 +36,7 @@ func (oms *OpcMockServerStatic) ReadItem(tag string) Item {
 func (oms *OpcMockServerStatic) Read() map[string]Item {
 	answer := make(map[string]Item)
 	for i, tag := range oms.TagList {
-		answer[tag] = Item{float64(i) + 1.0, OPCQualityGood, time.Now()}
+		answer[tag] = Item{float64(i) + 1.0, OPCQualityGood, time.Now(), reflect.TypeOf(float64(i) + 1.0).String()}
 	}
 	return answer
 }
@@ -54,7 +55,7 @@ func (oms *OpcMockServerRandom) ReadItem(tag string) Item {
 func (oms *OpcMockServerRandom) Read() map[string]Item {
 	answer := make(map[string]Item)
 	for _, tag := range oms.TagList {
-		answer[tag] = Item{rand.Float64(), OPCQualityGood, time.Now()}
+		answer[tag] = Item{rand.Float64(), OPCQualityGood, time.Now(), reflect.TypeOf(rand.Float64()).String()}
 	}
 	return answer
 }
@@ -90,9 +91,9 @@ func (oms *OpcMockServerWakeUp) Read() map[string]Item {
 
 	for _, tag := range oms.TagList {
 		if oms.AtSleep {
-			answer[tag] = Item{1.0, OPCQualityGood, time.Now()}
+			answer[tag] = Item{1.0, OPCQualityGood, time.Now(), reflect.TypeOf(1.0).String()}
 		} else {
-			answer[tag] = Item{rand.Float64(), OPCQualityGood, time.Now()}
+			answer[tag] = Item{rand.Float64(), OPCQualityGood, time.Now(), reflect.TypeOf(rand.Float64()).String()}
 		}
 	}
 
@@ -130,9 +131,9 @@ func (oms *OpcMockServerFallAsleep) Read() map[string]Item {
 
 	for _, tag := range oms.TagList {
 		if oms.AtSleep {
-			answer[tag] = Item{2.0, OPCQualityGood, time.Now()}
+			answer[tag] = Item{2.0, OPCQualityGood, time.Now(), reflect.TypeOf(2.0).String()}
 		} else {
-			answer[tag] = Item{rand.Float64(), OPCQualityGood, time.Now()}
+			answer[tag] = Item{rand.Float64(), OPCQualityGood, time.Now(), reflect.TypeOf(rand.Float64()).String()}
 		}
 	}
 

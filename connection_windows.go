@@ -334,9 +334,9 @@ func (ai *AutomationItems) readFromOpc(opcitem *ole.IDispatch) (Item, error) {
 	_, err := oleutil.CallMethod(opcitem, "Read", OPCCache, &v, &q, &ts)
 
 	// Quick and Dirty: if quality OK and value 0.0 then try again from the cache
-	if err == nil && ensureInt16(q.Value()) == 192 && ensureFloat64(v.Value()) == 0.0 {
-		_, err = oleutil.CallMethod(opcitem, "Read", OPCCache, &v, &q, &ts)
-	}
+	//if err == nil && ensureInt16(q.Value()) == 192 && ensureFloat64(v.Value()) == 0.0 {
+	//	_, err = oleutil.CallMethod(opcitem, "Read", OPCCache, &v, &q, &ts)
+	//}
 
 	opcReadsDuration.Observe(time.Since(t).Seconds())
 
@@ -345,9 +345,9 @@ func (ai *AutomationItems) readFromOpc(opcitem *ole.IDispatch) (Item, error) {
 		return Item{
 			Value:     0.0,            // return zero value, when flatlining ... check quality
 			Quality:   ensureInt16(0), // Bad (generic)
-			Timestamp: t,
-			ValueType: "",
-		}, nil
+			Timestamp: ts.Value().(time.Time),
+			ValueType: "unknown",
+		}, err
 	}
 	opcReadsCounter.WithLabelValues("success").Inc()
 
@@ -447,7 +447,12 @@ func (conn *opcConnectionImpl) ReadItem(tag string) Item {
 	} else {
 		logger.Printf("Tag %s not found. Add it first before reading it.", tag)
 	}
-	return Item{}
+	return Item{
+		Value:     0.0,
+		Quality:   0,
+		Timestamp: time.Time{},
+		ValueType: "unknown",
+	}
 }
 
 func (conn *opcConnectionImpl) ReadVariant(tag string, vt ole.VT) Item {

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/konimarti/opc"
 	"github.com/spf13/cobra"
+	"github.com/weizi-era/opc"
 )
 
 var Debug bool

@@ -8,7 +8,7 @@ import (
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
-	"github.com/konimarti/opc"
+	"github.com/weizi-era/opc"
 )
 
 // App contains the opc connection and the API routes
