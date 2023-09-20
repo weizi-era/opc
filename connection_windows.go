@@ -450,6 +450,12 @@ func (conn *opcConnectionImpl) ReadItem(tag string) (Item, error) {
 		conn.fix()
 	} else {
 		logger.Printf("Tag %s not found. Add it first before reading it.", tag)
+		err = conn.Add(tag)
+		if err != nil {
+			logger.Printf("Could not add tag %s: %s", tag, err)
+		} else {
+			logger.Printf("Added tag %s success", tag)
+		}
 	}
 	return Item{}, err
 }
