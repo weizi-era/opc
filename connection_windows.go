@@ -433,26 +433,23 @@ type opcConnectionImpl struct {
 }
 
 //ReadItem returns an Item for a specific tag.
-func (conn *opcConnectionImpl) ReadItem(tag string) Item {
+func (conn *opcConnectionImpl) ReadItem(tag string) (Item, error) {
+	var err error
+	var item Item
 	conn.mu.Lock()
 	defer conn.mu.Unlock()
 	opcitem, ok := conn.AutomationItems.items[tag]
 	if ok {
-		item, err := conn.AutomationItems.readFromOpc(opcitem)
+		item, err = conn.AutomationItems.readFromOpc(opcitem)
 		if err == nil {
-			return item
+			return item, nil
 		}
 		logger.Printf("Cannot read %s: %s. Trying to fix.", tag, err)
 		conn.fix()
 	} else {
 		logger.Printf("Tag %s not found. Add it first before reading it.", tag)
 	}
-	return Item{
-		Value:     0.0,
-		Quality:   0,
-		Timestamp: time.Now(),
-		ValueType: "unknown",
-	}
+	return Item{}, err
 }
 
 func (conn *opcConnectionImpl) ReadVariant(tag string, vt ole.VT) Item {

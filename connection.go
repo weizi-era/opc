@@ -44,7 +44,7 @@ type Connection interface {
 	Add(...string) error
 	Remove(string)
 	Read() map[string]Item
-	ReadItem(string) Item
+	ReadItem(string) (Item, error)
 	ReadVariant(string, ole.VT) Item
 	Tags() []string
 	Write(string, interface{}) error

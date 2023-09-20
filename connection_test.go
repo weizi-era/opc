@@ -169,13 +169,13 @@ func TestOpcRead(t *testing.T) {
 	var item Item
 
 	// should be able to read tag because it has been added
-	item = client.ReadItem("numeric.sin.int64")
+	item, _ = client.ReadItem("numeric.sin.int64")
 	if reflect.DeepEqual(item, Item{}) {
 		t.Fatal("this test should not have returned an empty item")
 	}
 
 	// should not be able to read tag because it does not exist
-	item = client.ReadItem("numeric.fantasy_tag.int64")
+	item, _ = client.ReadItem("numeric.fantasy_tag.int64")
 	if !reflect.DeepEqual(item, Item{}) {
 		t.Fatal("this test should have returned an empty item")
 	}
@@ -251,7 +251,7 @@ func TestOpcWrite(t *testing.T) {
 		}
 
 		// read tag and check if value has been changed
-		item := client.ReadItem(cfg.Tag)
+		item, _ := client.ReadItem(cfg.Tag)
 		if item.Value != cfg.Want {
 			t.Fatalf("tag has not been set to value. Got %v but expected %v", item.Value, cfg.Want)
 		}
