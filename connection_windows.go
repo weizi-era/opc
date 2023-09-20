@@ -331,7 +331,9 @@ func (ai *AutomationItems) readFromOpc(opcitem *ole.IDispatch) (Item, error) {
 
 	//read tag from opc server and monitor duration in seconds
 	t := time.Now()
-	_, err := oleutil.CallMethod(opcitem, "Read", OPCCache, &v, &q, &ts)
+	result, err := oleutil.CallMethod(opcitem, "Read", OPCCache, &v, &q, &ts)
+
+	logger.Println("debug:", result.VT, "----", result.Val, "----", result.Value())
 
 	// Quick and Dirty: if quality OK and value 0.0 then try again from the cache
 	//if err == nil && ensureInt16(q.Value()) == 192 && ensureFloat64(v.Value()) == 0.0 {
